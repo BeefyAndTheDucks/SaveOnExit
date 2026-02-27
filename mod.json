@@ -8,7 +8,7 @@
 	},
 	"id": "beefyandtheducks.save-on-exit",
 	"name": "Save On Exit",
-	"version": "v1.0.0",
+	"version": "v1.0.1",
 	"developer": "BeefyAndTheDucks",
 	"description": "Saves the game to GD Cloud when you exit the game, and loads from cloud when starting the game.",
 	"links": {
