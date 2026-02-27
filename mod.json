@@ -1,0 +1,58 @@
+{
+	"geode": "5.1.0",
+	"gd": {
+		"win": "2.2081",
+		"android": "2.2081",
+		"mac": "2.2081",
+		"ios": "2.2081"
+	},
+	"id": "beefyandtheducks.save-on-exit",
+	"name": "Save On Exit",
+	"version": "v1.0.0",
+	"developer": "BeefyAndTheDucks",
+	"description": "Saves the game to GD Cloud when you exit the game, and loads from cloud when starting the game.",
+	"dependencies": {
+		"geode.node-ids": ">=v1.20.0"
+	},
+	"settings": {
+		"load-title": {
+			"type": "title",
+			"name": "Load Actions"
+		},
+		"load-on-startup": {
+			"name": "Load on Startup",
+			"description": "Should the mod load (sync) your save data from RobTop servers on startup?",
+			"type": "bool",
+			"default": true
+		},
+		"show-load-success-popup": {
+			"name": "Show popup on load success",
+			"description": "Should the mod show a popup when a load (sync) has succeeded?",
+			"type": "bool",
+			"default": false
+		},
+		"show-load-failure-popup": {
+			"name": "Show popup on load failure",
+			"description": "Should the mod show a popup when a load (sync) has failed?",
+			"type": "bool",
+			"default": true
+		},
+
+		"save-title": {
+			"type": "title",
+			"name": "Save Actions"
+		},
+		"save-on-shutdown": {
+			"name": "Save on Shutdown",
+			"description": "Should the mod save (backup) your save data to the RobTop servers when closing the game?",
+			"type": "bool",
+			"default": true
+		},
+		"show-save-failure-popup": {
+			"name": "Show popup on save failure",
+			"description": "Should the mod show a popup when a save (backup) has failed? If not, it will quit anyways.",
+			"type": "bool",
+			"default": true
+		}
+	}
+}
