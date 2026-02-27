@@ -15,6 +15,9 @@ class $modify(MyMenuLayer, MenuLayer) {
 
         BackupSpinnerLayer* m_backupSpinner;
 
+        ListenerHandle m_backupFailed;
+        ListenerHandle m_backupSuccess;
+
         /*
          * Last used FLAlertLayer so we can actually quit the game
          * after a sync.
@@ -25,7 +28,7 @@ class $modify(MyMenuLayer, MenuLayer) {
     bool init() override {
         if (!MenuLayer::init()) return false;
 
-        auto backupFailed = BackupFailedEvent().listen(
+        m_fields->m_backupFailed = BackupFailedEvent().listen(
             [this](const bool wasTriggeredByUser, const BackupAccountError,
                    const int response)
             {
@@ -55,9 +58,8 @@ class $modify(MyMenuLayer, MenuLayer) {
                 } else
                     MenuLayer::FLAlert_Clicked(m_fields->m_alertLayer, true);
         });
-        backupFailed.leak();
 
-        auto backupSuccess = BackupSuccessfulEvent().listen(
+        m_fields->m_backupSuccess = BackupSuccessfulEvent().listen(
             [this](const bool wasTriggeredByUser) {
                 if (wasTriggeredByUser)
                     return;
@@ -68,15 +70,24 @@ class $modify(MyMenuLayer, MenuLayer) {
 
                 m_fields->m_backingUp = false;
         });
-        backupSuccess.leak();
 
         return true;
     }
 
-    void FLAlert_Clicked(FLAlertLayer* layer, const bool is_quit_button) override
+    void FLAlert_Clicked(FLAlertLayer* layer,
+                         const bool is_quit_button) override
     {
-        if (layer->getTag() != 0 || m_fields->m_backingUp || !Mod::get()->
-            getSettingValue<bool>("save-on-shutdown"))
+        if (layer->getTag() != 0 || m_fields->m_backingUp)
+        {
+            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+            return;
+        }
+
+        /*
+         * This crashes if it isn't on the previous line for some reason.
+         * If someone can figure out why and fix it, they're welcome to.
+         */
+        if (!Mod::get()->getSettingValue<bool>("save-on-shutdown"))
         {
             MenuLayer::FLAlert_Clicked(layer, is_quit_button);
             return;
