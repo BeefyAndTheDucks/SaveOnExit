@@ -11,6 +11,13 @@
 	"version": "v1.0.0",
 	"developer": "BeefyAndTheDucks",
 	"description": "Saves the game to GD Cloud when you exit the game, and loads from cloud when starting the game.",
+	"links": {
+		"source": "https://github.com/BeefyAndTheDucks/SaveOnExit"
+	},
+	"issues": {
+		"info": "Report on the Issue Tracker on GitHub",
+		"url": "https://github.com/BeefyAndTheDucks/SaveOnExit/issues"
+	},
 	"dependencies": {
 		"geode.node-ids": ">=v1.20.0"
 	},
@@ -54,5 +61,10 @@
 			"type": "bool",
 			"default": true
 		}
-	}
+	},
+	"tags": [
+		"online",
+		"enhancement",
+		"utility"
+	]
 }
