@@ -5,10 +5,8 @@
 
 using namespace geode::prelude;
 
-$on_game(Loaded) {
-	if (!Mod::get()->getSettingValue<bool>("load-on-startup"))
-		return;
-
+void Load()
+{
 	GJAccountManager* account_manager = GJAccountManager::sharedState();
 
 	log::info("Syncing account data...");
@@ -56,4 +54,31 @@ $on_game(Loaded) {
 
 	// This triggers sync after getting URL automatically.
 	account_manager->getAccountSyncURL();
+}
+
+$on_game(Loaded) {
+	const auto shouldLoadOption = Mod::get()->getSettingValue<std::string>(
+		"load-on-startup");
+
+	if (shouldLoadOption == "Never")
+	{
+		log::debug("Skipping loading due to setting.");
+	} else if (shouldLoadOption == "Always")
+	{
+		log::debug("Loading due to setting.");
+		Load();
+	} else if (shouldLoadOption == "Ask")
+	{
+		createQuickPopup("Load?",
+		                 "Would you like to load (sync) from RobTop servers?",
+		                 "No", "Yes",
+		                 [](FLAlertLayer*,
+		                    const bool btn2)
+		                 {
+			                 if (btn2)
+				                 Load();
+		                 });
+	} else {
+		log::warn("Unknown value {}.", shouldLoadOption);
+	}
 }

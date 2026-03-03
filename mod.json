@@ -29,8 +29,9 @@
 		"load-on-startup": {
 			"name": "Load on Startup",
 			"description": "Should the mod load (sync) your save data from RobTop servers on startup?",
-			"type": "bool",
-			"default": true
+			"type": "string",
+			"one-of": ["Never", "Always", "Ask"],
+			"default": "Always"
 		},
 		"show-load-success-popup": {
 			"name": "Show popup on load success",
@@ -52,8 +53,9 @@
 		"save-on-shutdown": {
 			"name": "Save on Shutdown",
 			"description": "Should the mod save (backup) your save data to the RobTop servers when closing the game?",
-			"type": "bool",
-			"default": true
+			"type": "string",
+			"one-of": ["Never", "Always", "Ask", "If Load Succeeded", "Ask if load Failed"],
+			"default": "If Load Succeeded"
 		},
 		"show-save-failure-popup": {
 			"name": "Show popup on save failure",

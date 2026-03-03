@@ -1,5 +1,8 @@
 ﻿#include <Geode/Geode.hpp>
 
+#include "events/SyncFailedEvent.hpp"
+#include "events/SyncSuccessfulEvent.hpp"
+
 using namespace geode::prelude;
 
 #include <Geode/modify/MenuLayer.hpp>
@@ -8,6 +11,9 @@ using namespace geode::prelude;
 #include "events/BackupSuccessfulEvent.hpp"
 
 #include "BackupSpinnerLayer.hpp"
+
+// store this globally till I find a better way
+static bool g_syncSucceeded = false;
 
 class $modify(MyMenuLayer, MenuLayer) {
     struct Fields {
@@ -51,8 +57,10 @@ class $modify(MyMenuLayer, MenuLayer) {
                                                  m_fields->m_alertLayer, true);
                                          else {
                                              m_fields->m_backingUp = false;
-                                             m_fields->m_backupSpinner->
-                                                 removeFromParent();
+                                             if (m_fields->m_backupSpinner !=
+                                                 nullptr)
+                                                 m_fields->m_backupSpinner->
+                                                     removeFromParent();
                                          }
                                      });
                 } else
@@ -74,28 +82,8 @@ class $modify(MyMenuLayer, MenuLayer) {
         return true;
     }
 
-    void FLAlert_Clicked(FLAlertLayer* layer,
-                         const bool is_quit_button) override
+    void Save(FLAlertLayer* layer)
     {
-        if (layer->getTag() != 0 || m_fields->m_backingUp)
-        {
-            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
-            return;
-        }
-
-        /*
-         * This crashes if it isn't on the previous line for some reason.
-         * If someone can figure out why and fix it, they're welcome to.
-         */
-        if (!Mod::get()->getSettingValue<bool>("save-on-shutdown"))
-        {
-            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
-            return;
-        }
-
-        if (!is_quit_button)
-            return;
-
         GJAccountManager* account_manager = GJAccountManager::sharedState();
 
         log::info("Backing up account data...");
@@ -113,6 +101,75 @@ class $modify(MyMenuLayer, MenuLayer) {
 
         // This triggers backup after getting URL automatically.
         account_manager->getAccountBackupURL();
+    }
+
+    void FLAlert_Clicked(FLAlertLayer* layer,
+                         const bool is_quit_button) override
+    {
+        /*
+         * Stays like this until we get a crash
+         * telling me what part of this errors out.
+         */
+        const int tag = layer->getTag();
+        const bool isBackingUp = m_fields->m_backingUp;
+        if (tag != 0 || isBackingUp)
+        {
+            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+            return;
+        }
+
+        if (!is_quit_button)
+            return;
+
+        const auto shouldSaveOption = Mod::get()->getSettingValue<std::string>(
+            "save-on-shutdown");
+
+        if (shouldSaveOption == "Always")
+        {
+            Save(layer);
+        } else if (shouldSaveOption == "Never")
+        {
+            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+        } else if (shouldSaveOption == "Ask")
+        {
+            createQuickPopup("Save?",
+                             "Would you like to save (backup) to RobTop servers before quitting?",
+                             "No", "Yes",
+                             [this, layer, is_quit_button](FLAlertLayer*,
+                                                           const bool btn2)
+                             {
+                                 if (btn2)
+                                     Save(layer);
+                                 else
+                                      MenuLayer::FLAlert_Clicked(
+                                          layer, is_quit_button);
+                             });
+        } else if (shouldSaveOption == "If Load Succeeded")
+        {
+            if (g_syncSucceeded)
+                Save(layer);
+            else
+                MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+        } else if (shouldSaveOption == "Ask if load Failed")
+        {
+            if (g_syncSucceeded)
+                Save(layer);
+            else
+            {
+                createQuickPopup("Save?",
+                                 "Would you like to save (backup) to RobTop servers before quitting? WARNING: The last load failed!",
+                                 "No", "Yes",
+                                 [this, layer, is_quit_button](FLAlertLayer*,
+                                                               const bool btn2)
+                                 {
+                                     if (btn2)
+                                         Save(layer);
+                                     else
+                                         MenuLayer::FLAlert_Clicked(
+                                             layer, is_quit_button);
+                                });
+            }
+        }
     }
 
     // Disable buttons if we're backing up
@@ -149,3 +206,17 @@ class $modify(MyMenuLayer, MenuLayer) {
     DISABLE_BUTTON_IF_BACKING_UP(onYouTube)
     DISABLE_BUTTON_IF_BACKING_UP(openOptions)
 };
+
+$execute {
+    auto syncFailed = SyncFailedEvent().listen(
+            [](const bool, const BackupAccountError, const int) {
+                g_syncSucceeded = false;
+    });
+    syncFailed.leak();
+
+    auto syncSuccess = SyncSuccessfulEvent().listen(
+        [](const bool) {
+            g_syncSucceeded = true;
+    });
+    syncSuccess.leak();
+}
