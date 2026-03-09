@@ -31,7 +31,7 @@
 			"description": "Should the mod load (sync) your save data from RobTop servers on startup?",
 			"type": "string",
 			"one-of": ["Never", "Always", "Ask"],
-			"default": "Always"
+			"default": "Ask"
 		},
 		"show-load-success-popup": {
 			"name": "Show popup on load success",
