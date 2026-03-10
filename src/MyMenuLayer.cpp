@@ -14,22 +14,26 @@ using namespace geode::prelude;
 
 // store this globally till I find a better way
 static bool g_syncSucceeded = false;
+static bool g_hasSynced = false;
 
 class $modify(MyMenuLayer, MenuLayer) {
     struct Fields {
         bool m_backingUp;
 
-        BackupSpinnerLayer* m_backupSpinner;
+        BackupSpinnerPopup* m_backupSpinner;
 
         ListenerHandle m_backupFailed;
         ListenerHandle m_backupSuccess;
-
-        /*
-         * Last used FLAlertLayer so we can actually quit the game
-         * after a sync.
-         */
-        FLAlertLayer* m_alertLayer;
     };
+
+    static void onModify(auto& self)
+    {
+        /*
+         * this is important since we're kinda littering the function call
+         * with a nullptr when returning. Prevents a crash.
+         */
+        self.setHookPriorityPost("MenuLayer::FLAlert_Clicked", Priority::LastPost - 1001);
+    }
 
     bool init() override {
         if (!MenuLayer::init()) return false;
@@ -54,7 +58,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                                      {
                                          if (is_close_anyway)
                                              MenuLayer::FLAlert_Clicked(
-                                                 m_fields->m_alertLayer, true);
+                                                 nullptr, true);
                                          else {
                                              m_fields->m_backingUp = false;
                                              if (m_fields->m_backupSpinner !=
@@ -64,7 +68,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                                          }
                                      });
                 } else
-                    MenuLayer::FLAlert_Clicked(m_fields->m_alertLayer, true);
+                    MenuLayer::FLAlert_Clicked(nullptr, true);
         });
 
         m_fields->m_backupSuccess = BackupSuccessfulEvent().listen(
@@ -72,7 +76,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                 if (wasTriggeredByUser)
                     return;
 
-                MenuLayer::FLAlert_Clicked(m_fields->m_alertLayer, true);
+                MenuLayer::FLAlert_Clicked(nullptr, true);
 
                 log::info("Successfully backed up account");
 
@@ -82,7 +86,7 @@ class $modify(MyMenuLayer, MenuLayer) {
         return true;
     }
 
-    void Save(FLAlertLayer* layer)
+    void Save()
     {
         GJAccountManager* account_manager = GJAccountManager::sharedState();
 
@@ -92,12 +96,11 @@ class $modify(MyMenuLayer, MenuLayer) {
         AccountLayer* account_layer = AccountLayer::create();
         account_layer->enterLayer();
 
-        m_fields->m_backupSpinner = BackupSpinnerLayer::create();
+        m_fields->m_backupSpinner = BackupSpinnerPopup::create();
         CCDirector::sharedDirector()->getRunningScene()->addChild(
             m_fields->m_backupSpinner);
 
         m_fields->m_backingUp = true;
-        m_fields->m_alertLayer = layer;
 
         // This triggers backup after getting URL automatically.
         account_manager->getAccountBackupURL();
@@ -106,13 +109,20 @@ class $modify(MyMenuLayer, MenuLayer) {
     void FLAlert_Clicked(FLAlertLayer* layer,
                          const bool is_quit_button) override
     {
-        /*
-         * Stays like this until we get a crash
-         * telling me what part of this errors out.
-         */
-        const int tag = layer->getTag();
-        const bool isBackingUp = m_fields->m_backingUp;
-        if (tag != 0 || isBackingUp)
+        // The layer is nullptr if we triggered it. But also do a sanity check.
+        if (layer == nullptr && m_fields->m_backingUp)
+        {
+            // Create a spoof FLAlertLayer to avoid crashing.
+            FLAlertLayer* spoofLayer = FLAlertLayer::create(
+                "Quitting",
+                "GD is now exiting, if you're seeing this, just ignore it. This only exists due to GD limitations.",
+                "Ok");
+            spoofLayer->setTag(0);
+            MenuLayer::FLAlert_Clicked(spoofLayer, true);
+            return;
+        }
+
+        if (layer->getTag() != 0)
         {
             MenuLayer::FLAlert_Clicked(layer, is_quit_button);
             return;
@@ -126,7 +136,7 @@ class $modify(MyMenuLayer, MenuLayer) {
 
         if (shouldSaveOption == "Always")
         {
-            Save(layer);
+            Save();
         } else if (shouldSaveOption == "Never")
         {
             MenuLayer::FLAlert_Clicked(layer, is_quit_button);
@@ -139,7 +149,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                                                            const bool btn2)
                              {
                                  if (btn2)
-                                     Save(layer);
+                                     Save();
                                  else
                                       MenuLayer::FLAlert_Clicked(
                                           layer, is_quit_button);
@@ -147,23 +157,26 @@ class $modify(MyMenuLayer, MenuLayer) {
         } else if (shouldSaveOption == "If Load Succeeded")
         {
             if (g_syncSucceeded)
-                Save(layer);
+                Save();
             else
                 MenuLayer::FLAlert_Clicked(layer, is_quit_button);
         } else if (shouldSaveOption == "Ask if load Failed")
         {
             if (g_syncSucceeded)
-                Save(layer);
+                Save();
             else
             {
+                const std::string str = g_hasSynced
+                                      ? "Would you like to save (backup) to RobTop servers before quitting? WARNING: The last load failed!"
+                                      : "Would you like to save (backup) to RobTop servers before quitting? WARNING: You haven't loaded this session! This will overwrite what's currently on the servers.";
                 createQuickPopup("Save?",
-                                 "Would you like to save (backup) to RobTop servers before quitting? WARNING: The last load failed!",
-                                 "No", "Yes",
+                                 str,
+                                 "Quit", "Save & Quit",
                                  [this, layer, is_quit_button](FLAlertLayer*,
                                                                const bool btn2)
                                  {
                                      if (btn2)
-                                         Save(layer);
+                                         Save();
                                      else
                                          MenuLayer::FLAlert_Clicked(
                                              layer, is_quit_button);
@@ -171,52 +184,20 @@ class $modify(MyMenuLayer, MenuLayer) {
             }
         }
     }
-
-    // Disable buttons if we're backing up
-#define DISABLE_BUTTON_IF_BACKING_UP(func) \
-    void func(CCObject* sender) {          \
-        if (m_fields->m_backingUp)         \
-            return;                        \
-                                           \
-        MenuLayer::func(sender);           \
-    }
-
-    DISABLE_BUTTON_IF_BACKING_UP(onAchievements)
-    DISABLE_BUTTON_IF_BACKING_UP(onCreator)
-    DISABLE_BUTTON_IF_BACKING_UP(onDaily)
-    DISABLE_BUTTON_IF_BACKING_UP(onDiscord)
-    //DISABLE_BUTTON_IF_BACKING_UP(onEveryplay)
-    DISABLE_BUTTON_IF_BACKING_UP(onFacebook)
-    //DISABLE_BUTTON_IF_BACKING_UP(onFreeLevels)
-    //DISABLE_BUTTON_IF_BACKING_UP(onFullVersion)
-    //DISABLE_BUTTON_IF_BACKING_UP(onGameCenter)
-    DISABLE_BUTTON_IF_BACKING_UP(onGarage)
-    //DISABLE_BUTTON_IF_BACKING_UP(onGooglePlayGames)
-    DISABLE_BUTTON_IF_BACKING_UP(onMoreGames)
-    DISABLE_BUTTON_IF_BACKING_UP(onMyProfile)
-    DISABLE_BUTTON_IF_BACKING_UP(onNewgrounds)
-    DISABLE_BUTTON_IF_BACKING_UP(onOptions)
-    DISABLE_BUTTON_IF_BACKING_UP(onPlay)
-    DISABLE_BUTTON_IF_BACKING_UP(onQuit)
-    DISABLE_BUTTON_IF_BACKING_UP(onRobTop)
-    DISABLE_BUTTON_IF_BACKING_UP(onStats)
-    //DISABLE_BUTTON_IF_BACKING_UP(onTrailer)
-    DISABLE_BUTTON_IF_BACKING_UP(onTwitch)
-    DISABLE_BUTTON_IF_BACKING_UP(onTwitter)
-    DISABLE_BUTTON_IF_BACKING_UP(onYouTube)
-    DISABLE_BUTTON_IF_BACKING_UP(openOptions)
 };
 
 $execute {
     auto syncFailed = SyncFailedEvent().listen(
             [](const bool, const BackupAccountError, const int) {
                 g_syncSucceeded = false;
+                g_hasSynced = true;
     });
     syncFailed.leak();
 
     auto syncSuccess = SyncSuccessfulEvent().listen(
         [](const bool) {
             g_syncSucceeded = true;
+            g_hasSynced = true;
     });
     syncSuccess.leak();
 }

@@ -37,7 +37,7 @@
 			"name": "Show popup on load success",
 			"description": "Should the mod show a popup when a load (sync) has succeeded?",
 			"type": "bool",
-			"default": false
+			"default": true
 		},
 		"show-load-failure-popup": {
 			"name": "Show popup on load failure",
