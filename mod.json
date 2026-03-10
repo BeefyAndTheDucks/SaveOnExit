@@ -8,7 +8,7 @@
 	},
 	"id": "beefyandtheducks.save-on-exit",
 	"name": "Save On Exit",
-	"version": "v1.1.0",
+	"version": "v1.2.0",
 	"developer": "BeefyAndTheDucks",
 	"description": "Saves the game to GD Cloud when you exit the game, and loads from cloud when starting the game.",
 	"links": {
@@ -55,7 +55,7 @@
 			"description": "Should the mod save (backup) your save data to the RobTop servers when closing the game?",
 			"type": "string",
 			"one-of": ["Never", "Always", "Ask", "If Load Succeeded", "Ask if load Failed"],
-			"default": "If Load Succeeded"
+			"default": "Ask"
 		},
 		"show-save-failure-popup": {
 			"name": "Show popup on save failure",
