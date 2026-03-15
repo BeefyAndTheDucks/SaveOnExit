@@ -76,9 +76,9 @@ class $modify(MyMenuLayer, MenuLayer) {
                 if (wasTriggeredByUser)
                     return;
 
-                MenuLayer::FLAlert_Clicked(nullptr, true);
-
                 log::info("Successfully backed up account");
+
+                MenuLayer::FLAlert_Clicked(nullptr, true);
 
                 m_fields->m_backingUp = false;
         });
