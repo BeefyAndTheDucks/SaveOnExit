@@ -31,7 +31,9 @@ class $modify(MyMenuLayer, MenuLayer) {
          * this is important since we're kinda littering the function call
          * with a nullptr when returning. Prevents a crash.
          */
-        self.setHookPriorityPost("MenuLayer::FLAlert_Clicked", Priority::LastPost - 1001);
+        const bool success = static_cast<bool>(self.setHookPriorityPost("MenuLayer::FLAlert_Clicked", Priority::LastPost - 1001));
+        if (!success)
+            log::error("Failed to change hook order of modify \"MenuLayer::FLAlert_Clicked\"!");
     }
 
     bool init() override {
