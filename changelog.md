@@ -1,3 +1,6 @@
+# 1.2.2
+- Implement changes suggested by the Index Staff
+
 # 1.2.1
 - Use Backup Spinner for loading
 - Fix the "Save?" dialog reopening if you hit "No"
