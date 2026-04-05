@@ -19,7 +19,16 @@ public:
         return nullptr;
     }
 
+    void close()
+    {
+        onClose(nullptr);
+    }
+
 protected:
+
+    // Don't close with esc/equivalent
+    void keyBackClicked() override {}
+
     bool init(const std::string& text) {
         constexpr CCSize size = { 160.f, 170.f };
 

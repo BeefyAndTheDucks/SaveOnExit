@@ -62,7 +62,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                                              Quit();
                                          else {
                                              if (m_fields->m_backupSpinner != nullptr)
-                                                 m_fields->m_backupSpinner->removeFromParent();
+                                                 m_fields->m_backupSpinner->close();
                                          }
                                      });
                 } else
@@ -93,8 +93,7 @@ class $modify(MyMenuLayer, MenuLayer) {
         account_layer->enterLayer();
 
         m_fields->m_backupSpinner = BackupSpinnerPopup::create("Backing up...");
-        CCDirector::sharedDirector()->getRunningScene()->addChild(
-            m_fields->m_backupSpinner);
+        m_fields->m_backupSpinner->show();
 
         // This triggers backup after getting URL automatically.
         account_manager->getAccountBackupURL();

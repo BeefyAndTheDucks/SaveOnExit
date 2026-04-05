@@ -18,8 +18,7 @@ void Load()
 	account_layer->hideLayer(true);
 
 	const auto backupSpinner = BackupSpinnerPopup::create("Syncing...");
-	CCDirector::sharedDirector()->getRunningScene()->addChild(
-		backupSpinner);
+	backupSpinner->show();
 
 	auto syncFailed = SyncFailedEvent().listen(
 		[backupSpinner](const bool wasTriggeredByUser, const BackupAccountError,
@@ -27,7 +26,7 @@ void Load()
 			if (wasTriggeredByUser)
 				return;
 
-			backupSpinner->removeFromParent();
+			backupSpinner->close();
 
 			if (Mod::get()->getSettingValue<bool>("show-load-failure-popup"))
 			{
@@ -47,7 +46,7 @@ void Load()
 			if (wasTriggeredByUser)
 				return;
 
-			backupSpinner->removeFromParent();
+			backupSpinner->close();
 
 			if (Mod::get()->getSettingValue<bool>("show-load-success-popup"))
 			{
