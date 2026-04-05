@@ -8,9 +8,9 @@ using namespace geode::prelude;
 class BackupSpinnerPopup : public Popup
 {
 public:
-    static BackupSpinnerPopup* create() {
+    static BackupSpinnerPopup* create(const std::string& text) {
         auto ret = new BackupSpinnerPopup();
-        if (ret && ret->init())
+        if (ret && ret->init(text))
         {
             ret->autorelease();
             return ret;
@@ -20,7 +20,7 @@ public:
     }
 
 protected:
-    bool init() {
+    bool init(const std::string& text) {
         constexpr CCSize size = { 160.f, 170.f };
 
         if (!Popup::init(size))
@@ -31,7 +31,7 @@ protected:
 
         const CCSize screenSize = CCDirector::sharedDirector()->getWinSize();
 
-        this->setTitle("Backing up");
+        this->setTitle(text);
 
         LoadingSpinner* loadingSpinner = LoadingSpinner::create(120);
         loadingSpinner->setPosition({screenSize.width / 2.f, screenSize.height / 2.f});

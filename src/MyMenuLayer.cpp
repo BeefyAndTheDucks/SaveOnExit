@@ -1,16 +1,15 @@
 ﻿#include <Geode/Geode.hpp>
+#include <Geode/modify/MenuLayer.hpp>
 
 #include "events/SyncFailedEvent.hpp"
 #include "events/SyncSuccessfulEvent.hpp"
-
-using namespace geode::prelude;
-
-#include <Geode/modify/MenuLayer.hpp>
 
 #include "events/BackupFailedEvent.hpp"
 #include "events/BackupSuccessfulEvent.hpp"
 
 #include "BackupSpinnerLayer.hpp"
+
+using namespace geode::prelude;
 
 // store this globally till I find a better way
 static bool g_syncSucceeded = false;
@@ -18,7 +17,7 @@ static bool g_hasSynced = false;
 
 class $modify(MyMenuLayer, MenuLayer) {
     struct Fields {
-        bool m_backingUp;
+        bool m_forceExit;
 
         BackupSpinnerPopup* m_backupSpinner;
 
@@ -53,22 +52,19 @@ class $modify(MyMenuLayer, MenuLayer) {
                     const gd::string str = CCString::createWithFormat(
                         "Failed to back up. Error Code: %i",
                         response)->getCString();
+
                     createQuickPopup("Error", str, "Go back", "Close anyway",
                                      [this](auto, const bool is_close_anyway)
                                      {
                                          if (is_close_anyway)
-                                             MenuLayer::FLAlert_Clicked(
-                                                 nullptr, true);
+                                             Quit();
                                          else {
-                                             m_fields->m_backingUp = false;
-                                             if (m_fields->m_backupSpinner !=
-                                                 nullptr)
-                                                 m_fields->m_backupSpinner->
-                                                     removeFromParent();
+                                             if (m_fields->m_backupSpinner != nullptr)
+                                                 m_fields->m_backupSpinner->removeFromParent();
                                          }
                                      });
                 } else
-                    MenuLayer::FLAlert_Clicked(nullptr, true);
+                    Quit();
         });
 
         m_fields->m_backupSuccess = BackupSuccessfulEvent().listen(
@@ -78,9 +74,7 @@ class $modify(MyMenuLayer, MenuLayer) {
 
                 log::info("Successfully backed up account");
 
-                MenuLayer::FLAlert_Clicked(nullptr, true);
-
-                m_fields->m_backingUp = false;
+                Quit();
         });
 
         return true;
@@ -96,33 +90,41 @@ class $modify(MyMenuLayer, MenuLayer) {
         AccountLayer* account_layer = AccountLayer::create();
         account_layer->enterLayer();
 
-        m_fields->m_backupSpinner = BackupSpinnerPopup::create();
+        m_fields->m_backupSpinner = BackupSpinnerPopup::create("Backing up...");
         CCDirector::sharedDirector()->getRunningScene()->addChild(
             m_fields->m_backupSpinner);
-
-        m_fields->m_backingUp = true;
 
         // This triggers backup after getting URL automatically.
         account_manager->getAccountBackupURL();
     }
 
+    void Quit() {
+        // Create a spoof FLAlertLayer to avoid crashing.
+        FLAlertLayer* spoofLayer = FLAlertLayer::create(
+            "Quitting",
+            "GD is now exiting, if you're seeing this, just ignore it. This only exists due to GD limitations.",
+            "Ok");
+        spoofLayer->setTag(0);
+        m_fields->m_forceExit = true;
+
+        MenuLayer::FLAlert_Clicked(spoofLayer, true);
+    }
+
+    void CreateQuitPopup(const std::string& content) {
+        createQuickPopup("Save?", content, "No", "Yes",
+                         [this](FLAlertLayer*, const bool btn2)
+                         {
+                             if (btn2)
+                                 Save();
+                             else
+                                 Quit();
+                         });
+    }
+
     void FLAlert_Clicked(FLAlertLayer* layer,
                          const bool is_quit_button) override
     {
-        // The layer is nullptr if we triggered it. But also do a sanity check.
-        if (layer == nullptr && m_fields->m_backingUp)
-        {
-            // Create a spoof FLAlertLayer to avoid crashing.
-            FLAlertLayer* spoofLayer = FLAlertLayer::create(
-                "Quitting",
-                "GD is now exiting, if you're seeing this, just ignore it. This only exists due to GD limitations.",
-                "Ok");
-            spoofLayer->setTag(0);
-            MenuLayer::FLAlert_Clicked(spoofLayer, true);
-            return;
-        }
-
-        if (layer->getTag() != 0)
+        if (layer->getTag() != 0 || m_fields->m_forceExit)
         {
             MenuLayer::FLAlert_Clicked(layer, is_quit_button);
             return;
@@ -139,27 +141,16 @@ class $modify(MyMenuLayer, MenuLayer) {
             Save();
         } else if (shouldSaveOption == "Never")
         {
-            MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+            Quit();
         } else if (shouldSaveOption == "Ask")
         {
-            createQuickPopup("Save?",
-                             "Would you like to save (backup) to RobTop servers before quitting?",
-                             "No", "Yes",
-                             [this, layer, is_quit_button](FLAlertLayer*,
-                                                           const bool btn2)
-                             {
-                                 if (btn2)
-                                     Save();
-                                 else
-                                      MenuLayer::FLAlert_Clicked(
-                                          layer, is_quit_button);
-                             });
+            CreateQuitPopup("Would you like to save (backup) to RobTop servers before quitting?");
         } else if (shouldSaveOption == "If Load Succeeded")
         {
             if (g_syncSucceeded)
                 Save();
             else
-                MenuLayer::FLAlert_Clicked(layer, is_quit_button);
+                Quit();
         } else if (shouldSaveOption == "Ask if load Failed")
         {
             if (g_syncSucceeded)
@@ -169,18 +160,7 @@ class $modify(MyMenuLayer, MenuLayer) {
                 const std::string str = g_hasSynced
                                       ? "Would you like to save (backup) to RobTop servers before quitting? WARNING: The last load failed!"
                                       : "Would you like to save (backup) to RobTop servers before quitting? WARNING: You haven't loaded this session! This will overwrite what's currently on the servers.";
-                createQuickPopup("Save?",
-                                 str,
-                                 "Quit", "Save & Quit",
-                                 [this, layer, is_quit_button](FLAlertLayer*,
-                                                               const bool btn2)
-                                 {
-                                     if (btn2)
-                                         Save();
-                                     else
-                                         MenuLayer::FLAlert_Clicked(
-                                             layer, is_quit_button);
-                                });
+                CreateQuitPopup(str);
             }
         }
     }

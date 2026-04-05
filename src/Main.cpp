@@ -1,5 +1,6 @@
 #include <Geode/Geode.hpp>
 
+#include "BackupSpinnerLayer.hpp"
 #include "events/SyncFailedEvent.hpp"
 #include "events/SyncSuccessfulEvent.hpp"
 
@@ -14,12 +15,19 @@ void Load()
 	// Listens to events for us.
 	AccountLayer* account_layer = AccountLayer::create();
 	account_layer->enterLayer();
+	account_layer->hideLayer(true);
+
+	const auto backupSpinner = BackupSpinnerPopup::create("Syncing...");
+	CCDirector::sharedDirector()->getRunningScene()->addChild(
+		backupSpinner);
 
 	auto syncFailed = SyncFailedEvent().listen(
-		[](const bool wasTriggeredByUser, const BackupAccountError,
-		   const int response) {
+		[backupSpinner](const bool wasTriggeredByUser, const BackupAccountError,
+		                const int response) {
 			if (wasTriggeredByUser)
 				return;
+
+			backupSpinner->removeFromParent();
 
 			if (Mod::get()->getSettingValue<bool>("show-load-failure-popup"))
 			{
@@ -35,9 +43,11 @@ void Load()
 	syncFailed.leak();
 
 	auto syncSuccess = SyncSuccessfulEvent().listen(
-		[](const bool wasTriggeredByUser) {
+		[backupSpinner](const bool wasTriggeredByUser) {
 			if (wasTriggeredByUser)
 				return;
+
+			backupSpinner->removeFromParent();
 
 			if (Mod::get()->getSettingValue<bool>("show-load-success-popup"))
 			{
@@ -62,10 +72,8 @@ $on_game(Loaded) {
 
 	if (shouldLoadOption == "Never")
 	{
-		log::debug("Skipping loading due to setting.");
 	} else if (shouldLoadOption == "Always")
 	{
-		log::debug("Loading due to setting.");
 		Load();
 	} else if (shouldLoadOption == "Ask")
 	{

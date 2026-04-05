@@ -1,3 +1,8 @@
+# 1.2.1
+- Use Backup Spinner for loading
+- Fix the "Save?" dialog reopening if you hit "No"
+- General cleanup behind-the-scenes.
+
 # 1.2.0
 - Change defaults to more sane options.
 - Fix crashes
