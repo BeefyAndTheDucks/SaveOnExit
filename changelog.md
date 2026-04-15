@@ -1,3 +1,6 @@
+# 1.2.3
+- Add a "Quit" button if saving takes longer than 10 seconds
+
 # 1.2.2
 - Implement changes suggested by the Index Staff
 

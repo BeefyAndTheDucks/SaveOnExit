@@ -1,6 +1,6 @@
 #include <Geode/Geode.hpp>
 
-#include "BackupSpinnerLayer.hpp"
+#include "BackupSpinnerPopup.hpp"
 #include "events/SyncFailedEvent.hpp"
 #include "events/SyncSuccessfulEvent.hpp"
 
@@ -17,7 +17,7 @@ void Load()
 	account_layer->enterLayer();
 	account_layer->hideLayer(true);
 
-	const auto backupSpinner = BackupSpinnerPopup::create("Syncing...");
+	const auto backupSpinner = BackupSpinnerPopup::create("Syncing...", false);
 	backupSpinner->show();
 
 	auto syncFailed = SyncFailedEvent().listen(

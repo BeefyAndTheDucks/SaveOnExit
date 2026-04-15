@@ -7,7 +7,7 @@
 #include "events/BackupFailedEvent.hpp"
 #include "events/BackupSuccessfulEvent.hpp"
 
-#include "BackupSpinnerLayer.hpp"
+#include "BackupSpinnerPopup.hpp"
 
 using namespace geode::prelude;
 
@@ -92,8 +92,10 @@ class $modify(MyMenuLayer, MenuLayer) {
         AccountLayer* account_layer = AccountLayer::create();
         account_layer->enterLayer();
 
-        m_fields->m_backupSpinner = BackupSpinnerPopup::create("Backing up...");
+        m_fields->m_backupSpinner = BackupSpinnerPopup::create("Backing up...", true);
         m_fields->m_backupSpinner->show();
+
+        QuitAnywayEvent().listen([this]{ Quit(); }).leak();
 
         // This triggers backup after getting URL automatically.
         account_manager->getAccountBackupURL();
