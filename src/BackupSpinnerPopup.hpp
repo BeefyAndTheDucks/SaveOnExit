@@ -52,7 +52,7 @@ protected:
         loadingSpinner->setPosition({screenSize.width / 2.f, screenSize.height / 2.f});
         this->addChild(loadingSpinner);
 
-        this->setID("BackupSpinner"_spr);
+        this->setID("backup-spinner"_spr);
 
         constexpr float delayBeforeQuitAnywayButtonSeconds = 10.0f;
         if (enableQuitAnywayButton)

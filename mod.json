@@ -19,7 +19,7 @@
 		"url": "https://github.com/BeefyAndTheDucks/SaveOnExit/issues"
 	},
 	"dependencies": {
-		"geode.node-ids": ">=v1.20.0"
+		"geode.node-ids": ">=v1.23.3"
 	},
 	"settings": {
 		"load-title": {
