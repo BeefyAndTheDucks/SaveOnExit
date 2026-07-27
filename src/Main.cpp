@@ -6,6 +6,9 @@
 
 using namespace geode::prelude;
 
+// Hi SMJS.. you know loading from cloud merges save data with the local data.. as it says in-game in the accounts screen "This will merge current data with the saved data.".
+// My question is, what did you even lose? Thanks.
+
 void Load()
 {
 	GJAccountManager* account_manager = GJAccountManager::sharedState();
