@@ -1,3 +1,9 @@
+# Abandonment Notice
+Hi.
+I've decided to abandon this project.
+This is due to problems with the base game, and the Servers provided by RobTop, which I've lost all motivation for solving.
+I hope you understand.
+
 # SaveOnExit
 
 <img src="logo.png" width="336" alt="the mod's logo" />
